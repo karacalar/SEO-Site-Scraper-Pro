@@ -1,5 +1,4 @@
 from pathlib import Path
-import tomllib
 
 
 def test_required_project_files_exist() -> None:
@@ -7,18 +6,17 @@ def test_required_project_files_exist() -> None:
         "README.md",
         "LICENSE",
         "requirements.txt",
-        "pyproject.toml",
         "main.py",
-        "src/seo_site_scraper_pro/app.py",
-        "src/seo_site_scraper_pro/ui/__init__.py",
-        "src/seo_site_scraper_pro/crawler/__init__.py",
-        "src/seo_site_scraper_pro/analyzer/__init__.py",
-        "src/seo_site_scraper_pro/parser/__init__.py",
-        "src/seo_site_scraper_pro/models/__init__.py",
-        "src/seo_site_scraper_pro/exporters/__init__.py",
-        "src/seo_site_scraper_pro/utils/__init__.py",
-        "assets/__init__.py",
-        "config/__init__.py",
+        "src/ui/main_window.py",
+        "src/crawler/crawler.py",
+        "src/parser/page_parser.py",
+        "src/analyzer/analyzer.py",
+        "src/exporters/exporter.py",
+        "src/models/entities.py",
+        "src/utils/logging_config.py",
+        "src/utils/url_tools.py",
+        "assets",
+        "config",
         "logs/.gitkeep",
         "reports/.gitkeep",
     ]
@@ -26,10 +24,12 @@ def test_required_project_files_exist() -> None:
         assert Path(file_name).exists(), file_name
 
 
-def test_pyproject_declares_entrypoint_and_dependencies() -> None:
-    project = tomllib.loads(Path("pyproject.toml").read_text(encoding="utf-8"))
-    assert project["project"]["requires-python"] == ">=3.13"
-    assert project["project"]["scripts"]["seo-site-scraper-pro"] == "seo_site_scraper_pro.app:main"
-    dependencies = set(project["project"]["dependencies"])
-    for package in ["aiohttp", "beautifulsoup4", "lxml", "customtkinter", "pandas", "openpyxl", "tldextract", "validators", "Pillow", "networkx", "matplotlib", "requests"]:
-        assert any(dependency.startswith(package) for dependency in dependencies)
+def test_no_packaging_layout_or_pyproject() -> None:
+    assert not Path("pyproject.toml").exists()
+    assert not Path("src/seo_site_scraper_pro").exists()
+
+
+def test_requirements_contains_every_dependency() -> None:
+    requirements = Path("requirements.txt").read_text(encoding="utf-8")
+    for package in ["aiohttp", "beautifulsoup4", "lxml", "customtkinter", "requests", "pandas", "openpyxl", "validators", "tldextract", "Pillow", "networkx", "matplotlib"]:
+        assert package in requirements

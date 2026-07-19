@@ -1,16 +1,16 @@
-"""Domain models for crawl results and configuration."""
+"""Domain models for SEO Site Scraper Pro."""
 
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from datetime import datetime, UTC
+from datetime import UTC, datetime
 from enum import Enum
 from pathlib import Path
 from typing import Any
 
 
 class Severity(str, Enum):
-    """SEO issue severity levels."""
+    """Issue severity levels."""
 
     CRITICAL = "Critical"
     HIGH = "High"
@@ -21,14 +21,16 @@ class Severity(str, Enum):
 
 @dataclass(slots=True)
 class CrawlSettings:
-    """User-configurable crawl settings."""
+    """Runtime crawler settings from the desktop form."""
 
     start_url: str
     max_pages: int = 500
     max_depth: int = 3
     concurrency: int = 10
     timeout: float = 15.0
+    retries: int = 2
     user_agent: str = "SEO Site Scraper Pro/1.0"
+    respect_robots: bool = True
     crawl_images: bool = True
     crawl_css: bool = True
     crawl_javascript: bool = True
@@ -44,8 +46,6 @@ class CrawlSettings:
 
 @dataclass(slots=True)
 class LinkInfo:
-    """Information about a discovered link."""
-
     source_url: str
     target_url: str
     anchor_text: str = ""
@@ -55,12 +55,11 @@ class LinkInfo:
     ugc: bool = False
     status_code: int | None = None
     redirect_chain: list[str] = field(default_factory=list)
+    error: str = ""
 
 
 @dataclass(slots=True)
 class ImageInfo:
-    """Information about a discovered image."""
-
     source_url: str
     image_url: str
     alt: str = ""
@@ -72,21 +71,15 @@ class ImageInfo:
 
     @property
     def missing_alt(self) -> bool:
-        """Return whether the image is missing alternative text."""
-
         return not self.alt.strip()
 
     @property
     def large_image_warning(self) -> bool:
-        """Return whether the image exceeds the large-image threshold."""
-
         return bool(self.file_size and self.file_size > 500_000)
 
 
 @dataclass(slots=True)
 class ResourceInfo:
-    """Information about a discovered non-page resource."""
-
     source_url: str
     resource_url: str
     resource_type: str
@@ -95,8 +88,6 @@ class ResourceInfo:
 
 @dataclass(slots=True)
 class PageData:
-    """Parsed page metrics and metadata."""
-
     url: str
     depth: int
     status_code: int = 0
@@ -129,12 +120,11 @@ class PageData:
     resources: list[ResourceInfo] = field(default_factory=list)
     emails: set[str] = field(default_factory=set)
     social_profiles: dict[str, set[str]] = field(default_factory=dict)
+    error: str = ""
 
 
 @dataclass(slots=True)
 class SEOIssue:
-    """Actionable SEO issue."""
-
     severity: Severity
     description: str
     recommendation: str
@@ -144,8 +134,6 @@ class SEOIssue:
 
 @dataclass(slots=True)
 class CrawlResult:
-    """Aggregate crawl output."""
-
     settings: CrawlSettings
     pages: dict[str, PageData] = field(default_factory=dict)
     issues: list[SEOIssue] = field(default_factory=list)
@@ -161,20 +149,13 @@ class CrawlResult:
     seo_score: int = 100
 
     def as_summary(self) -> dict[str, Any]:
-        """Return dashboard-friendly aggregate metrics."""
-
         internal = sum(1 for link in self.links if link.is_internal)
         external = len(self.links) - internal
         broken = sum(1 for link in self.links if link.status_code and link.status_code >= 400)
         redirects = sum(1 for page in self.pages.values() if page.status_code in {301, 302, 307, 308})
-        missing_alt = sum(1 for image in self.images if image.missing_alt)
-        missing_titles = sum(1 for page in self.pages.values() if not page.title)
-        missing_descriptions = sum(1 for page in self.pages.values() if not page.meta_description)
-        avg_response = (
-            sum(page.response_time for page in self.pages.values()) / len(self.pages)
-            if self.pages
-            else 0.0
-        )
+        avg_response = 0.0
+        if self.pages:
+            avg_response = sum(page.response_time for page in self.pages.values()) / len(self.pages)
         return {
             "total_urls": len(self.pages),
             "internal_urls": internal,
@@ -182,9 +163,9 @@ class CrawlResult:
             "broken_links": broken,
             "redirects": redirects,
             "images": len(self.images),
-            "missing_alt": missing_alt,
-            "missing_titles": missing_titles,
-            "missing_descriptions": missing_descriptions,
+            "missing_alt": sum(1 for image in self.images if image.missing_alt),
+            "missing_titles": sum(1 for page in self.pages.values() if not page.title),
+            "missing_descriptions": sum(1 for page in self.pages.values() if not page.meta_description),
             "average_response_time": round(avg_response, 3),
             "seo_score": self.seo_score,
         }

@@ -1,15 +1,20 @@
-"""URL normalization and classification helpers."""
+"""URL validation, normalization, and classification helpers."""
 
 from __future__ import annotations
 
 from urllib.parse import urldefrag, urljoin, urlparse, urlunparse
 
 
-def normalize_url(url: str, base_url: str | None = None) -> str:
-    """Return a normalized absolute HTTP(S) URL without fragments."""
+def ensure_scheme(url: str) -> str:
+    url = url.strip()
+    if not url.startswith(("http://", "https://")):
+        return f"https://{url}"
+    return url
 
-    absolute = urljoin(base_url, url) if base_url else url
-    absolute, _ = urldefrag(absolute.strip())
+
+def normalize_url(url: str, base_url: str | None = None) -> str:
+    absolute = urljoin(base_url, url) if base_url else ensure_scheme(url)
+    absolute, _fragment = urldefrag(absolute.strip())
     parsed = urlparse(absolute)
     scheme = parsed.scheme.lower() or "https"
     netloc = parsed.netloc.lower()
@@ -18,15 +23,12 @@ def normalize_url(url: str, base_url: str | None = None) -> str:
 
 
 def same_domain(url: str, root_url: str) -> bool:
-    """Return whether two URLs share a hostname, ignoring a leading www."""
-
     left = urlparse(url).hostname or ""
     right = urlparse(root_url).hostname or ""
     return left.removeprefix("www.") == right.removeprefix("www.")
 
 
 def is_html_like(url: str) -> bool:
-    """Return whether a URL probably points to an HTML page."""
-
     path = urlparse(url).path.lower()
-    return not path.endswith((".jpg", ".jpeg", ".png", ".gif", ".webp", ".svg", ".css", ".js", ".pdf", ".zip"))
+    blocked = (".jpg", ".jpeg", ".png", ".gif", ".webp", ".svg", ".css", ".js", ".pdf", ".zip")
+    return not path.endswith(blocked)

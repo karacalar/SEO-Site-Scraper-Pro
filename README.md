@@ -1,27 +1,40 @@
 # SEO Site Scraper Pro
 
-SEO Site Scraper Pro is a premium-feeling desktop SEO crawler written entirely in Python. It uses a modern CustomTkinter interface and an asynchronous aiohttp crawler to collect page, link, image, resource, security, sitemap, email, social, and SEO issue data.
+SEO Site Scraper Pro is a professional Windows desktop SEO crawler written in Python 3.12+ with CustomTkinter. It provides concurrent crawling, SEO analysis, image and link audits, email/social discovery, security checks, sitemap and robots.txt discovery, live logging, and commercial report exports.
+
+## Run on Windows 10/11
+
+```powershell
+py -3.12 -m venv .venv
+.\.venv\Scripts\activate
+pip install -r requirements.txt
+python main.py
+```
+
+## Project layout
+
+```text
+main.py
+requirements.txt
+assets/
+config/
+logs/
+reports/
+src/
+  ui/
+  crawler/
+  parser/
+  analyzer/
+  exporters/
+  models/
+  utils/
+tests/
+```
 
 ## Features
 
-- Dark themed desktop UI with dashboard, analysis tabs, settings, live logging, pause/resume/stop controls, filters, and global search.
-- Async queue-based crawler with connection pooling, depth limits, concurrency, timeouts, redirect support, and UI-safe worker thread integration.
-- Page analysis for titles, meta descriptions, headings, canonicals, robots directives, language, charset, structured data, Open Graph, Twitter Cards, status, size, response time, headers, and content metrics.
-- SEO issue detection with severity, recommendations, affected URLs, score, top issues, and priority fixes.
-- Link, image, resource, email, social media, security, robots.txt, and sitemap discovery.
-- Export support for CSV, JSON, Excel, and professional HTML reports.
-
-## Quick start
-
-```bash
-python -m venv .venv
-source .venv/bin/activate
-pip install -e .
-seo-site-scraper-pro
-```
-
-## Tests
-
-```bash
-pytest
-```
+- Modern dark CustomTkinter GUI with sidebar, toolbar, dashboard, status bar, progress bar, and responsive layout.
+- Async `aiohttp` crawler with queue-based concurrency, max depth/pages, retry, timeout, custom user agent, pause, resume, stop, and progress updates.
+- SEO analysis for titles, descriptions, H1/H2, canonicals, robots, Open Graph, Twitter Cards, Schema, image ALT, duplicate metadata, broken links, status codes, and response time.
+- Email finder, social media detector, security checker, sitemap detector, robots.txt reader, and live console logging to `logs/application.log`.
+- Export to Excel, CSV, JSON, and professional HTML report files under `reports/`.
