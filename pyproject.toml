@@ -1,0 +1,25 @@
+[project]
+name = "seo-site-scraper-pro"
+version = "0.1.0"
+description = "Professional desktop SEO crawler built with Python and CustomTkinter."
+readme = "README.md"
+requires-python = ">=3.13"
+dependencies = [
+  "aiohttp>=3.9",
+  "customtkinter>=5.2",
+  "openpyxl>=3.1",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=8.0"]
+
+[project.scripts]
+seo-site-scraper-pro = "seo_site_scraper_pro.app:main"
+
+[tool.pytest.ini_options]
+pythonpath = ["src"]
+testpaths = ["tests"]
+
+[tool.ruff]
+line-length = 100
+src = ["src", "tests"]
