@@ -13,6 +13,22 @@ import customtkinter as ctk
 from src.crawler.crawler import WebsiteCrawler
 from src.exporters.exporter import ReportExporter
 from src.models.entities import CrawlResult, CrawlSettings
+from src.ui.pages import (
+    DashboardFrame,
+    EmailsFrame,
+    ExportFrame,
+    ImagesFrame,
+    LinksFrame,
+    PageManager,
+    PagesFrame,
+    ResourcesFrame,
+    RobotsFrame,
+    SEOFrame,
+    SecurityFrame,
+    SettingsFrame,
+    SitemapsFrame,
+    SocialMediaFrame,
+)
 
 
 class MainWindow(ctk.CTk):
@@ -35,19 +51,34 @@ class MainWindow(ctk.CTk):
     def _build_layout(self) -> None:
         self.grid_columnconfigure(1, weight=1)
         self.grid_rowconfigure(0, weight=1)
-        self.sidebar = ctk.CTkFrame(self, width=210, corner_radius=0)
+        self.sidebar_buttons: dict[str, ctk.CTkButton] = {}
+        self.sidebar = ctk.CTkFrame(self, width=220, corner_radius=0)
         self.sidebar.grid(row=0, column=0, sticky="nsew")
         ctk.CTkLabel(self.sidebar, text="SEO Site\nScraper Pro", font=ctk.CTkFont(size=24, weight="bold")).pack(pady=24)
-        for section in ["Dashboard", "Pages", "SEO Analysis", "Images", "Links", "Resources", "Emails", "Social Media", "Security", "Sitemaps", "Robots.txt", "Export", "Settings"]:
-            ctk.CTkButton(self.sidebar, text=section, anchor="w", command=lambda name=section: self._show_section(name)).pack(fill="x", padx=14, pady=4)
+        for section in self._section_names():
+            button = ctk.CTkButton(
+                self.sidebar,
+                text=section,
+                anchor="w",
+                fg_color="transparent",
+                command=lambda name=section: self._show_section(name),
+            )
+            button.pack(fill="x", padx=14, pady=4)
+            self.sidebar_buttons[section] = button
         self.content = ctk.CTkFrame(self)
         self.content.grid(row=0, column=1, sticky="nsew", padx=16, pady=16)
         self.content.grid_columnconfigure(0, weight=1)
-        self.content.grid_rowconfigure(3, weight=1)
+        self.content.grid_rowconfigure(1, weight=1)
         self._build_toolbar()
-        self._build_dashboard()
-        self._build_results()
+        self._build_pages()
         self._build_status_bar()
+        self._show_section("Dashboard")
+
+    def _section_names(self) -> list[str]:
+        return [
+            "Dashboard", "Pages", "SEO Analysis", "Images", "Links", "Resources", "Emails",
+            "Social Media", "Security", "Sitemaps", "Robots.txt", "Export", "Settings",
+        ]
 
     def _build_toolbar(self) -> None:
         toolbar = ctk.CTkFrame(self.content)
@@ -72,7 +103,7 @@ class MainWindow(ctk.CTk):
             ctk.CTkButton(toolbar, text=label, command=command).grid(row=3, column=index, sticky="ew", padx=8, pady=10)
         self.search_entry = ctk.CTkEntry(toolbar, placeholder_text="Global search: URL, title, status, issue, depth")
         self.search_entry.grid(row=3, column=7, sticky="ew", padx=8, pady=10)
-        self.search_entry.bind("<KeyRelease>", lambda _event: self._refresh_results())
+        self.search_entry.bind("<KeyRelease>", lambda _event: self._refresh_pages())
 
     def _entry(self, parent: ctk.CTkFrame, placeholder: str, value: str, row: int, column: int, span: int = 1) -> ctk.CTkEntry:
         entry = ctk.CTkEntry(parent, placeholder_text=placeholder)
@@ -80,29 +111,38 @@ class MainWindow(ctk.CTk):
         entry.grid(row=row, column=column, columnspan=span, sticky="ew", padx=8, pady=8)
         return entry
 
-    def _build_dashboard(self) -> None:
-        self.dashboard = ctk.CTkFrame(self.content)
-        self.dashboard.grid(row=1, column=0, sticky="ew", pady=(0, 12))
-        self.cards: dict[str, ctk.CTkLabel] = {}
-        metrics = ["Total URLs", "Internal URLs", "External URLs", "Broken Links", "Redirects", "Images", "Missing ALT", "Missing Titles", "Missing Descriptions", "Average Response Time", "SEO Score"]
-        for index, metric in enumerate(metrics):
-            card = ctk.CTkFrame(self.dashboard)
-            card.grid(row=index // 6, column=index % 6, sticky="ew", padx=6, pady=6)
-            ctk.CTkLabel(card, text=metric, text_color="#a3a3a3").pack(padx=12, pady=(8, 0))
-            value = ctk.CTkLabel(card, text="0", font=ctk.CTkFont(size=20, weight="bold"))
-            value.pack(padx=12, pady=(0, 8))
-            self.cards[metric] = value
-        self.progress = ctk.CTkProgressBar(self.content)
-        self.progress.grid(row=2, column=0, sticky="ew", pady=(0, 12))
-        self.progress.set(0)
-
-    def _build_results(self) -> None:
-        self.results_box = ctk.CTkTextbox(self.content, wrap="none")
-        self.results_box.grid(row=3, column=0, sticky="nsew")
+    def _build_pages(self) -> None:
+        self.page_container = ctk.CTkFrame(self.content, fg_color="transparent")
+        self.page_container.grid(row=1, column=0, sticky="nsew")
+        self.page_container.grid_columnconfigure(0, weight=1)
+        self.page_container.grid_rowconfigure(0, weight=1)
+        self.page_manager = PageManager(self.page_container)
+        self.page_manager.register("Dashboard", DashboardFrame(self.page_container))
+        self.page_manager.register("Pages", PagesFrame(self.page_container, lambda: self.search_entry.get()))
+        self.page_manager.register("SEO Analysis", SEOFrame(self.page_container))
+        self.page_manager.register("Images", ImagesFrame(self.page_container))
+        self.page_manager.register("Links", LinksFrame(self.page_container))
+        self.page_manager.register("Resources", ResourcesFrame(self.page_container))
+        self.page_manager.register("Emails", EmailsFrame(self.page_container))
+        self.page_manager.register("Social Media", SocialMediaFrame(self.page_container))
+        self.page_manager.register("Security", SecurityFrame(self.page_container))
+        self.page_manager.register("Sitemaps", SitemapsFrame(self.page_container))
+        self.page_manager.register("Robots.txt", RobotsFrame(self.page_container))
+        self.page_manager.register("Export", ExportFrame(self.page_container))
+        self.page_manager.register("Settings", SettingsFrame(self.page_container, self._current_settings_summary))
 
     def _build_status_bar(self) -> None:
         self.status_label = ctk.CTkLabel(self.content, text="Ready", anchor="w")
-        self.status_label.grid(row=4, column=0, sticky="ew", pady=(8, 0))
+        self.status_label.grid(row=2, column=0, sticky="ew", pady=(8, 0))
+
+    def _current_settings_summary(self) -> dict[str, str]:
+        return {
+            "Theme": ctk.get_appearance_mode(),
+            "Concurrent Requests": self.concurrency_entry.get(),
+            "Timeout": self.timeout_entry.get(),
+            "User Agent": self.user_agent_entry.get(),
+            "Export Folder": str(self.export_folder),
+        }
 
     def start_scan(self) -> None:
         try:
@@ -151,10 +191,7 @@ class MainWindow(ctk.CTk):
 
     def clear_results(self) -> None:
         self.result = None
-        self.results_box.delete("1.0", "end")
-        self.progress.set(0)
-        for card in self.cards.values():
-            card.configure(text="0")
+        self._refresh_pages()
         self._set_status("Results cleared")
 
     def export_results(self) -> None:
@@ -175,47 +212,18 @@ class MainWindow(ctk.CTk):
             result, message = self.events.get_nowait()
             self.result = result or self.result
             self._set_status(message)
-            self._refresh_dashboard()
-            self._refresh_results()
+            self._refresh_pages()
         self.after(200, self._poll_events)
 
-    def _refresh_dashboard(self) -> None:
-        if not self.result:
-            return
-        summary = self.result.as_summary()
-        labels = {
-            "Total URLs": "total_urls",
-            "Internal URLs": "internal_urls",
-            "External URLs": "external_urls",
-            "Broken Links": "broken_links",
-            "Redirects": "redirects",
-            "Images": "images",
-            "Missing ALT": "missing_alt",
-            "Missing Titles": "missing_titles",
-            "Missing Descriptions": "missing_descriptions",
-            "Average Response Time": "average_response_time",
-            "SEO Score": "seo_score",
-        }
-        for label, key in labels.items():
-            self.cards[label].configure(text=str(summary[key]))
-        self.progress.set(min(1.0, len(self.result.pages) / max(1, self.result.settings.max_pages)))
-
-    def _refresh_results(self) -> None:
-        if not self.result:
-            return
-        term = self.search_entry.get().lower()
-        lines = ["URL\tStatus\tDepth\tTitle\tIssues"]
-        for page in self.result.pages.values():
-            issue_count = sum(1 for issue in self.result.issues if issue.affected_url == page.url)
-            line = f"{page.url}\t{page.status_code}\t{page.depth}\t{page.title}\t{issue_count}"
-            if not term or term in line.lower():
-                lines.append(line)
-        self.results_box.delete("1.0", "end")
-        self.results_box.insert("1.0", "\n".join(lines))
+    def _refresh_pages(self) -> None:
+        self.page_manager.refresh_all(self.result)
 
     def _show_section(self, section: str) -> None:
+        self.page_manager.show(section)
+        for name, button in self.sidebar_buttons.items():
+            button.configure(fg_color=("#1f6aa5" if name == section else "transparent"))
+        self._refresh_pages()
         self._set_status(f"Viewing {section}")
-        self._refresh_results()
 
     def _set_status(self, message: str) -> None:
         self.status_label.configure(text=f"Status: {message}")

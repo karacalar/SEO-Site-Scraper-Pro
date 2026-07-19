@@ -33,3 +33,27 @@ def test_requirements_contains_every_dependency() -> None:
     requirements = Path("requirements.txt").read_text(encoding="utf-8")
     for package in ["aiohttp", "beautifulsoup4", "lxml", "customtkinter", "requests", "pandas", "openpyxl", "validators", "tldextract", "Pillow", "networkx", "matplotlib"]:
         assert package in requirements
+
+
+def test_gui_navigation_modules_exist() -> None:
+    pages = Path("src/ui/pages.py").read_text(encoding="utf-8")
+    main_window = Path("src/ui/main_window.py").read_text(encoding="utf-8")
+    for class_name in [
+        "PageManager",
+        "DashboardFrame",
+        "PagesFrame",
+        "SEOFrame",
+        "ImagesFrame",
+        "LinksFrame",
+        "ResourcesFrame",
+        "EmailsFrame",
+        "SocialMediaFrame",
+        "SecurityFrame",
+        "SitemapsFrame",
+        "RobotsFrame",
+        "ExportFrame",
+        "SettingsFrame",
+    ]:
+        assert f"class {class_name}" in pages
+    assert "self.page_manager.register" in main_window
+    assert "self.page_manager.show(section)" in main_window
